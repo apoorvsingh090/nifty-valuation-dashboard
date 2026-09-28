@@ -126,8 +126,14 @@ if px is not None:
     aligned = df.join(px, how="inner")
     fig.add_trace(go.Scatter(x=aligned.index, y=aligned["price"], name=f"Price ({px_src})",
                              mode="lines", opacity=0.45), secondary_y=False)
-fig.add_vline(x=pd.to_datetime(ERA_START), line_dash="dash",
-              annotation_text="Apr-21 basis change")
+# Era break marker. NOTE: string date + shape/annotation, NOT add_vline:
+# plotly add_vline with a Timestamp raises
+# "Addition/subtraction of integers and integer-arrays with Timestamp is no longer supported"
+# on pandas 2.x (annotation auto-positioning does Timestamp arithmetic).
+fig.add_shape(type="line", x0="2021-04-01", x1="2021-04-01", y0=0, y1=1,
+              yref="paper", line=dict(dash="dash", color="gray"))
+fig.add_annotation(x="2021-04-01", y=1, yref="paper", text="Apr-21 basis change",
+                   showarrow=False, yanchor="bottom")
 fig.update_layout(title=f"{meta['name']} — P/E & P/B history (full series, break at Apr-21)",
                   hovermode="x unified", height=420, legend=dict(orientation="h"))
 fig.update_yaxes(title_text="P/E (left) + price", secondary_y=False)
