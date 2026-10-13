@@ -57,6 +57,7 @@ with era_note:
 
 pe_data = get_pe()
 verdicts = get_verdicts()
+vintage = max((df.index.max() for df in pe_data.values()), default=None)
 
 # ---------- overview table ----------
 st.subheader("Overview — all indices, current reading vs own era")
@@ -87,7 +88,8 @@ def _hl(r):
     return [""] * len(r)
 st.dataframe(ov.style.apply(_hl, axis=1), use_container_width=True, hide_index=True)
 st.caption("Signal = current PE percentile within own consolidated era (≤10th Cheap, 10-30 Fair-cheap, 30-70 Fair, 70-90 Rich, >90 Extreme). "
-           "Indices are never ranked against each other.")
+           "Indices are never ranked against each other. "
+           f"Data vintage: newest monthly reading {vintage.strftime('%b %Y') if vintage is not None else '—'}.")
 
 # ---------- detail ----------
 st.divider()
@@ -226,8 +228,10 @@ with st.expander("Data & refresh"):
         f"- Loaded valuation files: {len(pe_data)} indices. Price-backed timing: "
         f"{sum(1 for k in INDICES if (lambda t: t[0] is not None)(get_price(k)))} indices."
     )
-    if st.button("Refresh valuation cache now"):
+    if st.button("Reload data from local cache"):
         st.cache_data.clear()
         st.rerun()
+    st.caption("This re-reads the committed CSVs — it does not download. "
+               "For fresh readings run `python fetch_history.py` locally and commit.")
 
 st.caption("© Educational dashboard. Data: NSE Indices (via Downstox CSV), prices: user minutely files / Yahoo. Not investment advice.")

@@ -29,7 +29,6 @@ def era_stats(pe_df):
         "pb_p90": q(pb, 90) if len(pb) else float("nan"),
         "pb_cv": float(pb.std() / pb.mean()) if len(pb) and pb.mean() else float("nan"),
         "pe_pb_corr": float(era[["PE", "PB"]].corr().iloc[0, 1]) if len(pb) else float("nan"),
-        "pe_ar1": float(pe.autocorr(1)) if len(pe) > 3 else float("nan"),
     }
     # percentile rank of current within era (ties round up)
     out["pe_pct"] = float((pe <= out["cur_pe"]).mean() * 100)

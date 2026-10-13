@@ -1,6 +1,6 @@
 # NSE Index Valuation — can P/E or P/B time entries?
 
-Streamlit dashboard, deployable on Render. Covers 20 prominent NSE indices.
+Streamlit dashboard, live on Streamlit Community Cloud. Covers 20 prominent NSE indices.
 
 For each index it tells you whether **P/E / P/B is a sizing tool, context-only, or avoid-for-timing**,
 charts current ratios vs history, and (where long price history exists) tests starting-valuation → forward returns.
@@ -23,11 +23,12 @@ python fetch_history.py   # optional refresh
 streamlit run app.py
 ```
 
-## Deploy on Render
+## Deploy
 
-Option A — Blueprint: connect repo, Render reads `render.yaml` automatically.
+Primary: [Streamlit Community Cloud](https://share.streamlit.io/) — import the repo, main file `app.py`
+([live demo](https://nifty-valuation-dashboard-ukginbjcfbe7kh8szddxhi.streamlit.app/)).
 
-Option B — manual Web Service:
+Alternative (Render): Blueprint via `render.yaml`, or manual Web Service:
 - Runtime: Python, Build: `pip install -r requirements.txt`
 - Start: `streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true`
 - Python version: `3.11.9` (`runtime.txt`)
