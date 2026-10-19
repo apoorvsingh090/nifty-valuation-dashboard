@@ -1,5 +1,8 @@
 # NSE Index Valuation — can P/E or P/B time entries?
 
+[![CI](https://img.shields.io/github/actions/workflow/status/apoorvsingh090/nifty-valuation-dashboard/ci.yml?branch=main)](https://github.com/apoorvsingh090/nifty-valuation-dashboard/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 Streamlit dashboard, live on Streamlit Community Cloud. Covers 20 prominent NSE indices.
 
 For each index it tells you whether **P/E / P/B is a sizing tool, context-only, or avoid-for-timing**,
@@ -34,3 +37,20 @@ Alternative (Render): Blueprint via `render.yaml`, or manual Web Service:
 - Python version: `3.11.9` (`runtime.txt`)
 
 No secrets required. Educational tool, not investment advice.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for data rules and the PR process;
+[CHANGELOG.md](CHANGELOG.md) tracks changes. By participating you agree to
+the [Code of Conduct](CODE_OF_CONDUCT.md). Use the issue templates for bugs
+and feature requests.
+
+## Security
+
+Report tooling vulnerabilities privately via
+[GitHub Security Advisories](https://github.com/apoorvsingh090/nifty-valuation-dashboard/security/advisories);
+see [SECURITY.md](SECURITY.md).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
