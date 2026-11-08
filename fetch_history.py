@@ -1,35 +1,48 @@
 """Fetch NSE index PE/PB/DividendYield history from Downstox (NSE source) into data/pe/."""
-import os, requests
+import os
+from concurrent.futures import ThreadPoolExecutor
 
-SLUGS = [
-    "nifty-50", "nifty-bank", "nifty-it", "nifty-midcap-100", "nifty-pharma",
-    "nifty-fmcg", "nifty-auto", "nifty-next-50", "nifty-100", "nifty-500",
-    "nifty-energy", "nifty-metal", "nifty-psu-bank", "nifty-consumption",
-    "nifty-midcap-50", "nifty-smallcap-100", "nifty-smallcap-50",
-    "nifty-infra", "nifty-realty", "nifty-media",
-]
+import requests
+
+from registry import INDICES
 
 BASE = "https://downstox.com/api/index-pe/{slug}/download"
+OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "pe")
+MAX_WORKERS = 8
 
-def fetch_all(outdir="data/pe"):
+# Single source of truth: the index list lives in registry.py.
+SLUGS = list(INDICES)
+
+
+def _fetch_one(session, slug, outdir):
+    try:
+        r = session.get(BASE.format(slug=slug), timeout=30)
+        if r.status_code == 200 and b"Month,PE" in r.content[:500]:
+            with open(os.path.join(outdir, f"{slug}.csv"), "wb") as f:
+                f.write(r.content)
+            print(f"OK {slug} ({len(r.content)} bytes)")
+            return slug, True
+        print(f"FAIL {slug}: {r.status_code}")
+        return slug, False
+    except Exception as e:
+        print(f"ERR {slug}: {e}")
+        return slug, False
+
+
+def fetch_all(outdir=OUTDIR):
     os.makedirs(outdir, exist_ok=True)
     ok, fail = [], []
-    for s in SLUGS:
-        try:
-            r = requests.get(BASE.format(slug=s), headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
-            if r.status_code == 200 and b"Month,PE" in r.content[:500]:
-                with open(os.path.join(outdir, f"{s}.csv"), "wb") as f:
-                    f.write(r.content)
-                ok.append(s)
-                print(f"OK {s} ({len(r.content)} bytes)")
-            else:
-                fail.append(s)
-                print(f"FAIL {s}: {r.status_code}")
-        except Exception as e:
-            fail.append(s)
-            print(f"ERR {s}: {e}")
+    with requests.Session() as session:
+        session.headers.update({"User-Agent": "Mozilla/5.0"})
+        # Downloads are independent HTTP round-trips; 20 of them serially was
+        # tens of seconds of pure latency. Keep-alive + a small pool fixes it.
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            results = pool.map(lambda s: _fetch_one(session, s, outdir), SLUGS)
+            for slug, success in results:
+                (ok if success else fail).append(slug)
     print(f"Done: {len(ok)} ok, {len(fail)} failed: {fail}")
     return ok, fail
+
 
 if __name__ == "__main__":
     fetch_all()

@@ -1,9 +1,18 @@
 """Load PE/PB history (local cache, refreshable) + monthly price (local parquet -> Yahoo chart API)."""
 import os, glob
+import logging
+
 import pandas as pd
 import requests
 
+log = logging.getLogger(__name__)
+
 PE_DIR = os.path.join(os.path.dirname(__file__), "data", "pe")
+
+# One keep-alive connection pool for all Yahoo calls (a fresh socket per
+# request made the cold-start price probe needlessly slow).
+_SESSION = requests.Session()
+_SESSION.headers.update({"User-Agent": "Mozilla/5.0"})
 
 def load_pe(slug):
     path = os.path.join(PE_DIR, f"{slug}.csv")
@@ -40,8 +49,7 @@ def load_local_monthly_price(parquet_path):
 def fetch_yahoo_monthly(ticker, rng="10y"):
     """Direct Yahoo chart API (more reliable than yfinance wrapper on Render)."""
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
-    r = requests.get(url, params={"range": rng, "interval": "1mo"},
-                     headers={"User-Agent": "Mozilla/5.0"}, timeout=25)
+    r = _SESSION.get(url, params={"range": rng, "interval": "1mo"}, timeout=25)
     r.raise_for_status()
     res = r.json()["chart"]["result"][0]
     ts = res.get("timestamp", [])
@@ -66,8 +74,8 @@ def monthly_price_for(slug, meta, local_dir=None):
         if os.path.exists(p):
             try:
                 return load_local_monthly_price(p), "local-minutely"
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001 — opaque parquet stores
+                log.warning("local parquet unreadable for %s: %s", slug, exc)
     # 2) Yahoo
     t = meta.get("yahoo")
     if t:
@@ -76,6 +84,7 @@ def monthly_price_for(slug, meta, local_dir=None):
                 px = fetch_yahoo_monthly(t, rng)
                 if px is not None:
                     return px, f"yahoo:{t}"
-            except Exception:
+            except Exception as exc:  # noqa: BLE001 — network fallback path
+                log.info("yahoo %s (%s) failed for %s: %s", t, rng, slug, exc)
                 continue
     return None, "none"

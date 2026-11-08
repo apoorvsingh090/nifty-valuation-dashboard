@@ -1,14 +1,12 @@
 """NSE Index Valuation Dashboard — PE/PB timing: sizing vs entry/exit. Deploys on Render."""
-import os
-import numpy as np
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from registry import INDICES, local_parquet_dir
-from data_loader import load_all_pe, load_pe, monthly_price_for
-from analysis import verdict_for_index, signal_from_pct, ERA_START
+from data_loader import load_all_pe, monthly_price_for
+from analysis import verdict_for_index, ERA_START
 
 st.set_page_config(page_title="NSE Valuation Timing Dashboard", layout="wide",
                    page_icon="📊")
@@ -221,12 +219,17 @@ with st.expander("Why Bank / PSU Bank / Metals / Realty / Media break P/E"):
         "Bank P/B→forward corr is −0.72 (1yr) / −0.80 (3yr) in 2017-26 vs −0.39/−0.26 for P/E."
     )
 with st.expander("Data & refresh"):
+    # Count from the already-computed verdicts: the old caption re-probed
+    # get_price() for all 20 indices inline while rendering text.
+    price_backed = sum(
+        1 for v in verdicts.values() if v.get("fwd", {}).get("n", 0) > 0
+    )
     st.markdown(
         "- `python fetch_history.py` re-downloads all 20 CSVs into `data/pe/` (committed cache so Render builds offline).\n"
         "- Price: local `D:\\index_minutely` parquet if `LOCAL_PARQUET_DIR` set, else Yahoo chart API (`^NSEI`, `^NSEBANK`, `^CNXIT`, `^NSMIDCP` long history; "
         "other Yahoo sectorals are discontinued → valuation-only, by design).\n"
         f"- Loaded valuation files: {len(pe_data)} indices. Price-backed timing: "
-        f"{sum(1 for k in INDICES if (lambda t: t[0] is not None)(get_price(k)))} indices."
+        f"{price_backed} indices."
     )
     if st.button("Reload data from local cache"):
         st.cache_data.clear()
